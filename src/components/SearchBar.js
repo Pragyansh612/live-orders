@@ -16,9 +16,9 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
       transition={{ duration: 0.2 }}
     >
       <div className={`flex items-center rounded-lg border-2 bg-white px-3 py-2 shadow-sm ${
-        isFocused ? "border-indigo-500" : "border-gray-200"
+        isFocused ? "border-yellow-500" : "border-gray-200"
       }`}>
-        <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+        <MagnifyingGlassIcon className="h-5 w-5 text-black" />
         <input
           type="text"
           placeholder="Search orders by ID or item name across all tabs..."

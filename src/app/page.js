@@ -14,8 +14,6 @@ export default function Home() {
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Calculate order counts
   const orderCounts = {
     pending: orders.filter((order) => order.status === "pending").length,
     cooking: orders.filter((order) => order.status === "cooking").length,
@@ -83,21 +81,21 @@ const handleStatusChange = (orderId, nextStatus) => {
     } else if (direction === "right" && currentIndex > 0) {
       setActiveTab(tabOrder[currentIndex - 1]);
     }
-    
-    // Reset swipe direction
+
     setTimeout(() => setSwipeDirection(null), 300);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-indigo-800 to-indigo-900 shadow-lg">
+      <header className=" shadow-lg">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-white">Dynish Live Orders</h1>
+            <div className="flex items-center gap-5">
+              <img src="./logo.png" alt="" width={45} />
+              <h1 className="text-2xl font-bold text-yellow-400">Dynish Live Orders</h1>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="text-sm font-medium px-3 py-1 bg-indigo-700 text-white rounded-lg border border-indigo-600">
+              <div className="text-sm font-medium px-3 py-1 text-yellow-400 rounded-lg border border-yellow-400">
                 Restaurant
               </div>
             </div>

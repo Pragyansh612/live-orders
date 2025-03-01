@@ -22,7 +22,7 @@ const TabNavigation = ({ activeTab, setActiveTab, orderCounts }) => {
           >
             {activeTab === tab.id && (
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg shadow-md"
+                className="absolute inset-0 bg-yellow-500 rounded-lg shadow-md"
                 layoutId="activeTab"
                 initial={false}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
