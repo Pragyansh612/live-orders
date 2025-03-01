@@ -1,101 +1,175 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import TabNavigation from "@/components/TabNavigation";
+import SearchBar from "@/components/SearchBar";
+import OrderCard from "@/components/OrderCard";
+import EmptyState from "@/components/EmptyState";
+import { orders as initialOrders } from "@/data/orders";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [orders, setOrders] = useState(initialOrders);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [swipeDirection, setSwipeDirection] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Calculate order counts
+  const orderCounts = {
+    pending: orders.filter((order) => order.status === "pending").length,
+    cooking: orders.filter((order) => order.status === "cooking").length,
+    ready: orders.filter((order) => order.status === "ready").length,
+  };
+
+const handleStatusChange = (orderId, nextStatus) => {
+  setOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
+  setTimeout(() => {
+    setOrders((prevOrders) => [
+      { ...orders.find((order) => order.id === orderId), status: nextStatus },
+      ...prevOrders
+    ]);
+    setActiveTab(nextStatus);
+  }, 400);
+};
+
+  const handleCompleteOrder = (orderId) => {
+    setOrders((prevOrders) =>
+      prevOrders.filter((order) => order.id !== orderId)
+    );
+  };
+
+  // Update search results when search term changes
+  useEffect(() => {
+    if (searchTerm) {
+      setIsSearching(true);
+      const results = orders.filter((order) => 
+        order.id.toString().includes(searchTerm) ||
+        order.items.some((item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+  
+      // If searching in "cooking", include "new" (pending) orders too
+      if (activeTab === "cooking") {
+        const newOrders = orders.filter(order => 
+          order.status === "pending" && 
+          order.id.toString().includes(searchTerm)
+        );
+        setSearchResults([...results, ...newOrders]);
+      } else {
+        setSearchResults(results);
+      }
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchTerm, orders, activeTab]);
+  
+
+  // Filter orders by tab if not searching
+  const filteredOrders = isSearching 
+    ? searchResults.filter(order => order.status === activeTab)
+    : orders.filter(order => order.status === activeTab);
+
+  // Handle swipe gesture
+  const handleSwipe = (direction) => {
+    setSwipeDirection(direction);
+    
+    const tabOrder = ["pending", "cooking", "ready"];
+    const currentIndex = tabOrder.indexOf(activeTab);
+    
+    if (direction === "left" && currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+    } else if (direction === "right" && currentIndex > 0) {
+      setActiveTab(tabOrder[currentIndex - 1]);
+    }
+    
+    // Reset swipe direction
+    setTimeout(() => setSwipeDirection(null), 300);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-gradient-to-r from-indigo-800 to-indigo-900 shadow-lg">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-white">Dynish Live Orders</h1>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="text-sm font-medium px-3 py-1 bg-indigo-700 text-white rounded-lg border border-indigo-600">
+                Restaurant
+              </div>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        <TabNavigation
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          orderCounts={orderCounts}
+        />
+
+        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
+        <motion.div
+          className="mt-6"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            if (info.offset.x > 100) {
+              handleSwipe("right");
+            } else if (info.offset.x < -100) {
+              handleSwipe("left");
+            }
+          }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ 
+                x: swipeDirection === "left" ? 300 : swipeDirection === "right" ? -300 : 0,
+                opacity: 0 
+              }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ 
+                x: swipeDirection === "left" ? -300 : swipeDirection === "right" ? 300 : 0,
+                opacity: 0 
+              }}
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 }
+              }}
+            >
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredOrders.length > 0 ? (
+                  filteredOrders.map((order) => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onStatusChange={handleStatusChange}
+                      onComplete={handleCompleteOrder}
+                    />
+                  ))
+                ) : (
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <EmptyState 
+                      message={
+                        isSearching 
+                          ? `No ${activeTab} orders found for "${searchTerm}"`
+                          : `No ${activeTab} orders found`
+                      } 
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
