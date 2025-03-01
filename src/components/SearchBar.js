@@ -21,8 +21,8 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
         <MagnifyingGlassIcon className="h-5 w-5 text-black" />
         <input
           type="text"
-          placeholder="Search orders by ID or item name across all tabs..."
-          className="w-full border-none bg-transparent px-3 py-1 outline-none"
+          placeholder="Search orders by ID or item name"
+          className="w-full border-none bg-transparent px-3 py-1 outline-none text-black"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsFocused(true)}
