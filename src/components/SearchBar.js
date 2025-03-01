@@ -1,10 +1,9 @@
-// src/components/SearchBar.js
 "use client";
 import { useState } from "react";
-import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, XCircleIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
-const SearchBar = ({ searchTerm, setSearchTerm }) => {
+const SearchBar = ({ searchTerm, setSearchTerm, onScan }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -39,6 +38,13 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
             <XCircleIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
           </motion.button>
         )}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={onScan}
+          className="ml-2 p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+        >
+          <QrCodeIcon className="h-6 w-6 text-gray-600" />
+        </motion.button>
       </div>
     </motion.div>
   );

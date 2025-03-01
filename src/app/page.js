@@ -14,27 +14,59 @@ export default function Home() {
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  
   const orderCounts = {
     pending: orders.filter((order) => order.status === "pending").length,
     cooking: orders.filter((order) => order.status === "cooking").length,
     ready: orders.filter((order) => order.status === "ready").length,
   };
 
-const handleStatusChange = (orderId, nextStatus) => {
-  setOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
-  setTimeout(() => {
-    setOrders((prevOrders) => [
-      { ...orders.find((order) => order.id === orderId), status: nextStatus },
-      ...prevOrders
-    ]);
-    setActiveTab(nextStatus);
-  }, 400);
-};
+  const handleStatusChange = (orderId, nextStatus) => {
+    setOrders((prevOrders) => {
+      // Find the order to update
+      const orderToUpdate = prevOrders.find((order) => order.id === orderId);
+      // Remove it from current position
+      const filteredOrders = prevOrders.filter((order) => order.id !== orderId);
+      
+      // Create a modified order with animation properties
+      const updatedOrder = { 
+        ...orderToUpdate, 
+        status: nextStatus,
+        isTransitioning: true 
+      };
+      
+      // Return filtered list first
+      return filteredOrders;
+    });
+    
+    // Add back the updated order after a short delay
+    setTimeout(() => {
+      setOrders((prevOrders) => [
+        { ...orders.find((order) => order.id === orderId), status: nextStatus },
+        ...prevOrders
+      ]);
+      setActiveTab(nextStatus);
+    }, 300); // Slightly faster transition
+  };
 
   const handleCompleteOrder = (orderId) => {
+    // Animate out before removal
     setOrders((prevOrders) =>
-      prevOrders.filter((order) => order.id !== orderId)
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, isCompleting: true } 
+          : order
+      )
     );
+    
+    // Remove after animation completes
+    setTimeout(() => {
+      setOrders((prevOrders) =>
+        prevOrders.filter((order) => order.id !== orderId)
+      );
+    }, 300);
   };
 
   // Update search results when search term changes
@@ -63,13 +95,12 @@ const handleStatusChange = (orderId, nextStatus) => {
     }
   }, [searchTerm, orders, activeTab]);
   
-
   // Filter orders by tab if not searching
   const filteredOrders = isSearching 
     ? searchResults.filter(order => order.status === activeTab)
     : orders.filter(order => order.status === activeTab);
 
-  // Handle swipe gesture
+  // Handle swipe gesture with improved touch handling
   const handleSwipe = (direction) => {
     setSwipeDirection(direction);
     
@@ -82,12 +113,63 @@ const handleStatusChange = (orderId, nextStatus) => {
       setActiveTab(tabOrder[currentIndex - 1]);
     }
 
-    setTimeout(() => setSwipeDirection(null), 300);
+    // Clear direction after animation completes
+    setTimeout(() => setSwipeDirection(null), 400);
+  };
+
+  // Enhanced touch handling for mobile
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe) {
+      handleSwipe("left");
+    } else if (isRightSwipe) {
+      handleSwipe("right");
+    }
+    
+    // Reset touch coordinates
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const contentVariants = {
+    initial: (direction) => ({
+      x: direction === "left" ? 300 : direction === "right" ? -300 : 0,
+      opacity: 0
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.3 }
+      }
+    },
+    exit: (direction) => ({
+      x: direction === "left" ? -300 : direction === "right" ? 300 : 0,
+      opacity: 0,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.3 }
+      }
+    })
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className=" shadow-lg">
+      <header className="shadow-lg">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-5">
@@ -104,43 +186,28 @@ const handleStatusChange = (orderId, nextStatus) => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
+        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        
         <TabNavigation
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           orderCounts={orderCounts}
         />
 
-        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-
-        <motion.div
-          className="mt-6"
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(e, info) => {
-            if (info.offset.x > 100) {
-              handleSwipe("right");
-            } else if (info.offset.x < -100) {
-              handleSwipe("left");
-            }
-          }}
+        <div 
+          className="mt-6 touch-manipulation"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={swipeDirection}>
             <motion.div
               key={activeTab}
-              initial={{ 
-                x: swipeDirection === "left" ? 300 : swipeDirection === "right" ? -300 : 0,
-                opacity: 0 
-              }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ 
-                x: swipeDirection === "left" ? -300 : swipeDirection === "right" ? 300 : 0,
-                opacity: 0 
-              }}
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
-              }}
+              custom={swipeDirection}
+              variants={contentVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
             >
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredOrders.length > 0 ? (
@@ -166,7 +233,7 @@ const handleStatusChange = (orderId, nextStatus) => {
               </div>
             </motion.div>
           </AnimatePresence>
-        </motion.div>
+        </div>
       </main>
     </div>
   );
